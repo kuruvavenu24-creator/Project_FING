@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sky Camera App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sky-scene" aria-hidden="true">
+    <div class="sun-glow"></div>
+    <div class="cloud cloud-one"></div>
+    <div class="cloud cloud-two"></div>
+    <div class="cloud cloud-three"></div>
+    <div class="cloud cloud-four"></div>
+  </div>
+
+  <main class="app-shell">
+    <section class="hero-card">
+      <p class="eyebrow">Sky Blue Experience</p>
+      <h1>Camera And About App</h1>
+      <p class="subtitle">
+        A calm, sky-themed app with a live camera view and a simple about section.
+      </p>
+      <p class="launch-note">
+        For camera access, run this app on <strong>localhost</strong> using the included server.
+      </p>
+
+      <div class="option-row" role="tablist" aria-label="App sections">
+        <button class="option-btn active" data-target="camera-panel" aria-selected="true">
+          Camera
+        </button>
+        <button class="option-btn" data-target="about-panel" aria-selected="false">
+          About
+        </button>
+      </div>
+
+      <section id="camera-panel" class="panel active" aria-live="polite">
+        <div class="camera-frame">
+          <video id="camera-feed" autoplay playsinline muted></video>
+          <div id="camera-placeholder" class="camera-placeholder">
+            Tap "Start Camera" to open your camera view.
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button id="start-camera" class="action-btn">Start Camera</button>
+          <button id="stop-camera" class="action-btn secondary">Stop Camera</button>
+        </div>
+
+        <p id="camera-status" class="status-text">
+          Camera is currently idle.
+        </p>
+      </section>
+
+      <section id="about-panel" class="panel" aria-live="polite">
+        <div class="about-card">
+          <h2>About This App</h2>
+          <p>
+            This small web app was designed with a sky blue color palette, soft cards,
+            and drifting cloud animations to keep the interface light and peaceful.
+          </p>
+          <p>
+            Use the Camera section to preview your device camera directly in the browser.
+            The About section explains the theme and purpose of the app.
+          </p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
