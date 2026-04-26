@@ -8,6 +8,68 @@ const cameraStatus = document.getElementById("camera-status");
 
 let cameraStream = null;
 
+function scoreCameraLabel(label) {
+  const normalizedLabel = label.toLowerCase();
+  let score = 0;
+
+  if (/(front|user|selfie|facetime)/.test(normalizedLabel)) {
+    score += 5;
+  }
+
+  if (/(integrated|webcam|hd camera)/.test(normalizedLabel)) {
+    score += 2;
+  }
+
+  if (/(back|rear|environment|telephoto|ultra)/.test(normalizedLabel)) {
+    score -= 5;
+  }
+
+  return score;
+}
+
+async function getPreferredFrontCameraStream() {
+  const initialStream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: "user" }
+    },
+    audio: false
+  });
+
+  const currentTrack = initialStream.getVideoTracks()[0];
+  const currentFacingMode = currentTrack.getSettings().facingMode;
+
+  if (currentFacingMode === "user") {
+    return initialStream;
+  }
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const videoInputs = devices.filter((device) => device.kind === "videoinput");
+
+  if (videoInputs.length < 2) {
+    return initialStream;
+  }
+
+  const preferredDevice = videoInputs
+    .filter((device) => device.deviceId)
+    .sort((left, right) => scoreCameraLabel(right.label) - scoreCameraLabel(left.label))[0];
+
+  const currentScore = scoreCameraLabel(currentTrack.label || "");
+  const preferredScore = preferredDevice ? scoreCameraLabel(preferredDevice.label || "") : -1;
+
+  if (!preferredDevice || preferredScore <= currentScore) {
+    return initialStream;
+  }
+
+  initialStream.getTracks().forEach((track) => track.stop());
+
+  return navigator.mediaDevices.getUserMedia({
+    video: {
+      deviceId: { exact: preferredDevice.deviceId }
+    },
+    audio: false
+  });
+}
+
 optionButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const targetId = button.dataset.target;
@@ -35,14 +97,11 @@ async function startCamera() {
   }
 
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-      audio: false
-    });
+    cameraStream = await getPreferredFrontCameraStream();
 
     cameraFeed.srcObject = cameraStream;
     cameraPlaceholder.classList.add("hidden");
-    cameraStatus.textContent = "Camera started successfully.";
+    cameraStatus.textContent = "Front camera started successfully.";
   } catch (error) {
     cameraStatus.textContent = "Unable to access the camera. Please allow permission and try again.";
     cameraPlaceholder.classList.remove("hidden");
