@@ -217,23 +217,48 @@ h1 {
 }
 
 .camera-frame {
+  min-height: 300px;
+}
+
+.camera-stage {
   position: relative;
   min-height: 300px;
   overflow: hidden;
+  border-radius: 18px;
 }
 
 #camera-feed {
   display: block;
   width: 100%;
-  min-height: 300px;
+  height: 300px;
   border-radius: 18px;
   object-fit: cover;
   background: rgba(126, 190, 220, 0.35);
 }
 
+#hand-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.detection-pill {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(16, 75, 113, 0.72);
+  color: #ffffff;
+  font-size: 0.88rem;
+  backdrop-filter: blur(8px);
+}
+
 .camera-placeholder {
   position: absolute;
-  inset: 1rem;
+  inset: 0;
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -245,6 +270,28 @@ h1 {
 
 .camera-placeholder.hidden {
   display: none;
+}
+
+.detector-card {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+}
+
+.detector-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-soft);
+}
+
+.detector-text {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-soft);
 }
 
 .action-row {
@@ -310,7 +357,8 @@ h1 {
     min-height: 240px;
   }
 
+  .camera-stage,
   #camera-feed {
-    min-height: 240px;
+    height: 240px;
   }
 }
