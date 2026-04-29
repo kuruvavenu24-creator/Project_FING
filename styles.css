@@ -27,6 +27,28 @@ body {
     linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-bottom) 100%);
 }
 
+.gesture-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  background: rgba(11, 136, 217, 0.45);
+  box-shadow: 0 0 0 6px rgba(11, 136, 217, 0.16);
+  transform: translate(-50%, -50%) scale(0.75);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  transition: opacity 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.gesture-cursor.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .sky-scene {
   position: fixed;
   inset: 0;
@@ -294,6 +316,12 @@ h1 {
   color: var(--text-soft);
 }
 
+.pointer-text {
+  margin: 0.65rem 0 0;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
 .action-row {
   display: flex;
   gap: 0.8rem;
@@ -333,6 +361,11 @@ h1 {
 
 .status-text {
   margin: 1rem 0 0;
+}
+
+.gesture-focus {
+  box-shadow: 0 0 0 4px rgba(11, 136, 217, 0.22), 0 0.8rem 1.5rem rgba(45, 156, 219, 0.28);
+  transform: translateY(-2px);
 }
 
 .about-card h2 {

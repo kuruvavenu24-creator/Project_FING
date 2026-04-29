@@ -18,6 +18,8 @@ const cameraStatus = document.getElementById("camera-status");
 const handOverlay = document.getElementById("hand-overlay");
 const detectionPill = document.getElementById("detection-pill");
 const handSummary = document.getElementById("hand-summary");
+const pointerSummary = document.getElementById("pointer-summary");
+const gestureCursor = document.getElementById("gesture-cursor");
 const overlayContext = handOverlay.getContext("2d");
 
 let cameraStream = null;
@@ -25,10 +27,74 @@ let handLandmarker = null;
 let handLandmarkerPromise = null;
 let detectionFrameId = null;
 let lastProcessedTime = -1;
+let hoveredGestureElement = null;
+let cursorPosition = null;
 
 function setDetectionState(pillText, summaryText) {
   detectionPill.textContent = pillText;
   handSummary.textContent = summaryText;
+}
+
+function setPointerState(text) {
+  pointerSummary.textContent = text;
+}
+
+function clearGestureHover() {
+  if (!hoveredGestureElement) {
+    return;
+  }
+
+  hoveredGestureElement.classList.remove("gesture-focus");
+  hoveredGestureElement = null;
+}
+
+function updateGestureHover(cursorX, cursorY) {
+  const hoveredElement = document
+    .elementFromPoint(cursorX, cursorY)
+    ?.closest("button, .option-btn, .action-btn");
+
+  if (hoveredGestureElement === hoveredElement) {
+    return;
+  }
+
+  clearGestureHover();
+
+  if (hoveredElement) {
+    hoveredElement.classList.add("gesture-focus");
+    hoveredGestureElement = hoveredElement;
+  }
+}
+
+function hideGestureCursor() {
+  gestureCursor.classList.remove("active");
+  clearGestureHover();
+  cursorPosition = null;
+}
+
+function updateGestureCursor(indexFingerTip) {
+  if (!indexFingerTip) {
+    hideGestureCursor();
+    setPointerState("Raise one hand and point with your index finger to move the on-screen mouse.");
+    return;
+  }
+
+  const targetX = (1 - indexFingerTip.x) * window.innerWidth;
+  const targetY = indexFingerTip.y * window.innerHeight;
+
+  if (!cursorPosition) {
+    cursorPosition = { x: targetX, y: targetY };
+  } else {
+    cursorPosition.x += (targetX - cursorPosition.x) * 0.4;
+    cursorPosition.y += (targetY - cursorPosition.y) * 0.4;
+  }
+
+  gestureCursor.style.left = `${cursorPosition.x}px`;
+  gestureCursor.style.top = `${cursorPosition.y}px`;
+  gestureCursor.classList.add("active");
+  updateGestureHover(cursorPosition.x, cursorPosition.y);
+  setPointerState(
+    `Index finger mouse active at X ${Math.round(cursorPosition.x)} and Y ${Math.round(cursorPosition.y)}.`
+  );
 }
 
 function scoreCameraLabel(label) {
@@ -209,10 +275,12 @@ function renderHandDetections(results) {
       "Looking for hands",
       "No hands detected right now. Hold your hand inside the camera frame."
     );
+    updateGestureCursor(null);
     return;
   }
 
   const handDescriptions = [];
+  const primaryIndexFingerTip = results.landmarks[0]?.[8] || null;
 
   results.landmarks.forEach((landmarks, index) => {
     const handedness = results.handedness[index]?.[0] || {
@@ -240,6 +308,7 @@ function renderHandDetections(results) {
     `${handCount} hand${handCount > 1 ? "s" : ""} detected`,
     `Detected ${handCount} hand${handCount > 1 ? "s" : ""}: ${handDescriptions.join(", ")}.`
   );
+  updateGestureCursor(primaryIndexFingerTip);
 }
 
 function stopDetectionLoop() {
@@ -250,6 +319,7 @@ function stopDetectionLoop() {
 
   lastProcessedTime = -1;
   clearOverlay();
+  hideGestureCursor();
 }
 
 function runDetectionLoop() {
@@ -333,6 +403,7 @@ function stopCamera() {
       "Hand detection paused",
       "Start the camera to begin detecting hands in the live view."
     );
+    setPointerState("Raise one hand and point with your index finger to move the on-screen mouse.");
     return;
   }
 
@@ -346,6 +417,7 @@ function stopCamera() {
     "Hand detection paused",
     "Start the camera to begin detecting hands in the live view."
   );
+  setPointerState("Raise one hand and point with your index finger to move the on-screen mouse.");
 }
 
 cameraFeed.addEventListener("loadedmetadata", resizeOverlayCanvas);
