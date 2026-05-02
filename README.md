@@ -45,6 +45,24 @@ This app works on Windows 10 and Windows 11.
 - Camera access works best on `localhost` or `https`
 - Allow browser camera permission when prompted
 
+## System-Wide Windows Gesture Mouse
+
+The browser app can move an on-screen pointer inside the page, but Windows-wide mouse control needs a native helper.
+
+- Run `start-system-mouse.bat` to start the Windows gesture mouse with a preview window
+- Run `start-system-mouse-background.bat` to keep it running in the background for other apps
+- Press `Ctrl + Alt + Q` to stop the gesture mouse
+- The launcher stores Python packages inside the project folder at `.python-packages`
+- The first run downloads the hand-landmarker model into `assets/models`
+- If you have multiple cameras, edit `windows_system_mouse.py` or pass another `--camera-index`
+
+### Files for Windows Gesture Mouse
+
+- `windows_system_mouse.py` - native Windows cursor controller using your index fingertip
+- `requirements-system-mouse.txt` - Python dependencies for the system-wide mouse
+- `start-system-mouse.bat` - launch with preview
+- `start-system-mouse-background.bat` - launch in background mode
+
 ## Project Files
 
 - `index.html` - app structure
