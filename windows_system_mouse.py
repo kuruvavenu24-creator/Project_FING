@@ -41,6 +41,11 @@ MOD_ALT = 0x0001
 MOD_CONTROL = 0x0002
 VK_Q = 0x51
 WM_HOTKEY = 0x0312
+FAST_CAMERA_WIDTH = 424
+FAST_CAMERA_HEIGHT = 240
+MAX_CURSOR_RESPONSE = 1.0
+CURSOR_GAIN_X = 3.4
+CURSOR_GAIN_Y = 3.4
 
 user32 = ctypes.windll.user32
 
@@ -114,6 +119,15 @@ def move_cursor(x_position: float, y_position: float) -> None:
   user32.SetCursorPos(int(round(x_position)), int(round(y_position)))
 
 
+def clamp(value: float, minimum: float, maximum: float) -> float:
+  return max(minimum, min(value, maximum))
+
+
+def scale_pointer_axis(raw_value: float, gain: float) -> float:
+  centered_value = (raw_value - 0.5) * gain + 0.5
+  return clamp(centered_value, 0.0, 1.0)
+
+
 def draw_status(frame, text: str, line: int = 0) -> None:
   y_position = 30 + (line * 32)
   cv2.putText(
@@ -160,12 +174,19 @@ def main() -> int:
     print("Could not open the camera. Try a different --camera-index value.", file=sys.stderr)
     return 1
 
+  capture.set(cv2.CAP_PROP_FRAME_WIDTH, FAST_CAMERA_WIDTH)
+  capture.set(cv2.CAP_PROP_FRAME_HEIGHT, FAST_CAMERA_HEIGHT)
+
+  if hasattr(cv2, "CAP_PROP_BUFFERSIZE"):
+    capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
   smoothed_x = screen_width / 2
   smoothed_y = screen_height / 2
-  smoothing_factor = 0.28
+  smoothing_factor = MAX_CURSOR_RESPONSE
 
   print("Gesture mouse started.")
   print("Move your index fingertip to move the Windows cursor.")
+  print("High-speed cursor mode is enabled.")
   print("Press Ctrl+Alt+Q to stop.")
 
   with vision.HandLandmarker.create_from_options(options) as landmarker:
@@ -186,8 +207,10 @@ def main() -> int:
         hand_landmarks = result.hand_landmarks[0]
         index_tip = hand_landmarks[8]
 
-        target_x = index_tip.x * screen_width
-        target_y = index_tip.y * screen_height
+        scaled_x = scale_pointer_axis(index_tip.x, CURSOR_GAIN_X)
+        scaled_y = scale_pointer_axis(index_tip.y, CURSOR_GAIN_Y)
+        target_x = scaled_x * screen_width
+        target_y = scaled_y * screen_height
         smoothed_x += (target_x - smoothed_x) * smoothing_factor
         smoothed_y += (target_y - smoothed_y) * smoothing_factor
         move_cursor(smoothed_x, smoothed_y)
@@ -210,7 +233,7 @@ def main() -> int:
           draw_status(frame, f"{handedness_label} hand detected")
           draw_status(
             frame,
-            f"Cursor: {int(smoothed_x)}, {int(smoothed_y)}",
+            f"Cursor: {int(smoothed_x)}, {int(smoothed_y)}  Gain: {CURSOR_GAIN_X:.1f}x",
             line=1
           )
       elif not args.background:
