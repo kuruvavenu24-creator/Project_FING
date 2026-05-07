@@ -46,6 +46,19 @@ FAST_CAMERA_HEIGHT = 240
 MAX_CURSOR_RESPONSE = 1.0
 CURSOR_GAIN_X = 3.4
 CURSOR_GAIN_Y = 3.4
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_WHEEL = 0x0800
+MOUSEEVENTF_HWHEEL = 0x1000
+WHEEL_DELTA = 120
+SCROLL_TRIGGER_DELTA = 0.028
+SWIPE_TRIGGER_DELTA = 0.028
+STEADY_MOVEMENT_THRESHOLD = 0.006
+CLICK_HOLD_SECONDS = 0.65
+PAUSE_HOLD_SECONDS = 1.8
+MOTION_ACTION_COOLDOWN_SECONDS = 0.16
+SCROLL_STRENGTH = WHEEL_DELTA * 2
+SWIPE_STRENGTH = WHEEL_DELTA * 2
 
 user32 = ctypes.windll.user32
 
@@ -119,6 +132,23 @@ def move_cursor(x_position: float, y_position: float) -> None:
   user32.SetCursorPos(int(round(x_position)), int(round(y_position)))
 
 
+def trigger_mouse_event(flags: int, data: int = 0) -> None:
+  user32.mouse_event(flags, 0, 0, data, 0)
+
+
+def perform_left_click() -> None:
+  trigger_mouse_event(MOUSEEVENTF_LEFTDOWN)
+  trigger_mouse_event(MOUSEEVENTF_LEFTUP)
+
+
+def perform_vertical_scroll(delta: int) -> None:
+  trigger_mouse_event(MOUSEEVENTF_WHEEL, delta)
+
+
+def perform_horizontal_swipe(delta: int) -> None:
+  trigger_mouse_event(MOUSEEVENTF_HWHEEL, delta)
+
+
 def clamp(value: float, minimum: float, maximum: float) -> float:
   return max(minimum, min(value, maximum))
 
@@ -183,10 +213,18 @@ def main() -> int:
   smoothed_x = screen_width / 2
   smoothed_y = screen_height / 2
   smoothing_factor = MAX_CURSOR_RESPONSE
+  previous_index_tip: tuple[float, float] | None = None
+  steady_start_time: float | None = None
+  click_fired_for_hold = False
+  pause_fired_for_hold = False
+  motion_action_ready_at = 0.0
+  last_action_label = "Tracking"
+  is_paused = False
 
   print("Gesture mouse started.")
   print("Move your index fingertip to move the Windows cursor.")
   print("High-speed cursor mode is enabled.")
+  print("Up/down motion scrolls, left/right motion swipes, short hold clicks, long hold pauses.")
   print("Press Ctrl+Alt+Q to stop.")
 
   with vision.HandLandmarker.create_from_options(options) as landmarker:
@@ -206,14 +244,65 @@ def main() -> int:
       if result.hand_landmarks:
         hand_landmarks = result.hand_landmarks[0]
         index_tip = hand_landmarks[8]
+        current_time = time.monotonic()
+        current_tip = (index_tip.x, index_tip.y)
+
+        if previous_index_tip is None:
+          delta_x = 0.0
+          delta_y = 0.0
+        else:
+          delta_x = current_tip[0] - previous_index_tip[0]
+          delta_y = current_tip[1] - previous_index_tip[1]
+
+        movement_amount = max(abs(delta_x), abs(delta_y))
+
+        if movement_amount <= STEADY_MOVEMENT_THRESHOLD:
+          if steady_start_time is None:
+            steady_start_time = current_time
+            click_fired_for_hold = False
+            pause_fired_for_hold = False
+
+          hold_duration = current_time - steady_start_time
+
+          if hold_duration >= PAUSE_HOLD_SECONDS and not pause_fired_for_hold:
+            is_paused = not is_paused
+            pause_fired_for_hold = True
+            click_fired_for_hold = True
+            last_action_label = "Paused" if is_paused else "Resumed"
+          elif hold_duration >= CLICK_HOLD_SECONDS and not click_fired_for_hold and not is_paused:
+            perform_left_click()
+            click_fired_for_hold = True
+            last_action_label = "Click"
+        else:
+          steady_start_time = None
+          click_fired_for_hold = False
+          pause_fired_for_hold = False
+
+        if (
+          not is_paused
+          and current_time >= motion_action_ready_at
+          and movement_amount > STEADY_MOVEMENT_THRESHOLD
+        ):
+          if abs(delta_y) >= SCROLL_TRIGGER_DELTA and abs(delta_y) > abs(delta_x) * 1.2:
+            perform_vertical_scroll(SCROLL_STRENGTH if delta_y < 0 else -SCROLL_STRENGTH)
+            motion_action_ready_at = current_time + MOTION_ACTION_COOLDOWN_SECONDS
+            last_action_label = "Scroll Up" if delta_y < 0 else "Scroll Down"
+          elif abs(delta_x) >= SWIPE_TRIGGER_DELTA and abs(delta_x) > abs(delta_y) * 1.2:
+            perform_horizontal_swipe(SWIPE_STRENGTH if delta_x > 0 else -SWIPE_STRENGTH)
+            motion_action_ready_at = current_time + MOTION_ACTION_COOLDOWN_SECONDS
+            last_action_label = "Swipe Right" if delta_x > 0 else "Swipe Left"
 
         scaled_x = scale_pointer_axis(index_tip.x, CURSOR_GAIN_X)
         scaled_y = scale_pointer_axis(index_tip.y, CURSOR_GAIN_Y)
         target_x = scaled_x * screen_width
         target_y = scaled_y * screen_height
-        smoothed_x += (target_x - smoothed_x) * smoothing_factor
-        smoothed_y += (target_y - smoothed_y) * smoothing_factor
-        move_cursor(smoothed_x, smoothed_y)
+
+        if not is_paused:
+          smoothed_x += (target_x - smoothed_x) * smoothing_factor
+          smoothed_y += (target_y - smoothed_y) * smoothing_factor
+          move_cursor(smoothed_x, smoothed_y)
+
+        previous_index_tip = current_tip
 
         if not args.background:
           x_pixel = int(index_tip.x * frame.shape[1])
@@ -236,12 +325,27 @@ def main() -> int:
             f"Cursor: {int(smoothed_x)}, {int(smoothed_y)}  Gain: {CURSOR_GAIN_X:.1f}x",
             line=1
           )
+          draw_status(
+            frame,
+            f"Mode: {'Paused' if is_paused else 'Active'}  Action: {last_action_label}",
+            line=2
+          )
       elif not args.background:
+        previous_index_tip = None
+        steady_start_time = None
+        click_fired_for_hold = False
+        pause_fired_for_hold = False
         draw_status(frame, "No hand detected")
         draw_status(frame, "Show your index finger to move the mouse", line=1)
+        draw_status(frame, f"Mode: {'Paused' if is_paused else 'Active'}", line=2)
+      else:
+        previous_index_tip = None
+        steady_start_time = None
+        click_fired_for_hold = False
+        pause_fired_for_hold = False
 
       if not args.background:
-        draw_status(frame, "Ctrl+Alt+Q or ESC to stop", line=2)
+        draw_status(frame, "Ctrl+Alt+Q or ESC to stop", line=3)
         cv2.imshow(PREVIEW_WINDOW_NAME, frame)
 
         if cv2.waitKey(1) & 0xFF == 27:

@@ -51,6 +51,9 @@ The browser app can move an on-screen pointer inside the page, but Windows-wide 
 
 - Run `start-system-mouse.bat` to start the Windows gesture mouse with a preview window
 - Run `start-system-mouse-background.bat` to keep it running in the background for other apps
+- Move the index finger up or down to scroll
+- Move the index finger left or right to trigger horizontal swipe-style actions
+- Hold the finger steady briefly to click and hold it longer to pause or resume tracking
 - Press `Ctrl + Alt + Q` to stop the gesture mouse
 - The launcher stores Python packages inside the project folder at `.python-packages`
 - The first run downloads the hand-landmarker model into `assets/models`
