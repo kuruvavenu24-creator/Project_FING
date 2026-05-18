@@ -1,13 +1,30 @@
-# Sky Camera App
+# AirTouch Controller
 
-A simple sky-themed web app with two main options:
+A camera-and-gesture project with two parts:
 
-- `Camera` to open a live browser camera preview
-- `About` to show a short description of the app
+- A sky-themed browser demo with camera, hand landmarks, and an on-screen finger mouse
+- A Windows Python prototype for system-wide air-mouse control using hand tracking
 
 ## Preview
 
 ![Sky Camera App Preview](assets/sky-camera-preview.png)
+
+## Project Direction
+
+Core flow:
+
+`Camera -> Hand Detection -> Finger Tracking -> Gesture Detection -> Action`
+
+Current stack:
+
+- `OpenCV` for camera capture in the native Windows helper
+- `MediaPipe` for 21 hand landmarks including the index fingertip
+- Browser HTML/CSS/JavaScript for the visual demo app
+
+Platform focus:
+
+- `PC / Windows` is the easiest prototype path and is already implemented in Python
+- `Android` is possible later, but controlling other apps would need Accessibility Services and more permissions
 
 ## Features
 
@@ -16,6 +33,7 @@ A simple sky-themed web app with two main options:
 - Camera start and stop controls
 - Friendly status messages for camera access
 - Responsive layout for desktop and mobile
+- Native Windows gesture mouse prototype
 
 ## Run Locally
 
@@ -44,6 +62,8 @@ This app works on Windows 10 and Windows 11.
 
 - Camera access works best on `localhost` or `https`
 - Allow browser camera permission when prompted
+- Lighting and background clutter can reduce hand-detection quality
+- Smooth control depends on filtering and camera latency
 
 ## System-Wide Windows Gesture Mouse
 
@@ -59,6 +79,13 @@ The browser app can move an on-screen pointer inside the page, but Windows-wide 
 - The launcher stores Python packages inside the project folder at `.python-packages`
 - The first run downloads the hand-landmarker model into `assets/models`
 - If you have multiple cameras, edit `windows_system_mouse.py` or pass another `--camera-index`
+
+## Challenges
+
+- Hand tracking can be less stable in low light
+- Background control is restricted on mobile platforms
+- Scroll and cursor motion need filtering to avoid jitter
+- Lower latency makes the experience feel much better
 
 ### Files for Windows Gesture Mouse
 

@@ -35,7 +35,7 @@ MODEL_URL = (
   "hand_landmarker/float16/1/hand_landmarker.task"
 )
 MODEL_PATH = Path(__file__).resolve().parent / "assets" / "models" / "hand_landmarker.task"
-PREVIEW_WINDOW_NAME = "Gesture Mouse Controller"
+PREVIEW_WINDOW_NAME = "AirTouch Controller"
 HOTKEY_ID = 1
 MOD_ALT = 0x0001
 MOD_CONTROL = 0x0002
@@ -81,7 +81,7 @@ class MSG(ctypes.Structure):
 
 def parse_args() -> argparse.Namespace:
   parser = argparse.ArgumentParser(
-    description="Move the Windows mouse with your index fingertip."
+    description="AirTouch Controller for Windows using hand tracking."
   )
   parser.add_argument(
     "--background",
@@ -237,7 +237,7 @@ def main() -> int:
   last_swipe_time = 0.0
   last_action_label = "Waiting for active index finger"
 
-  print("Gesture mouse started.")
+  print("AirTouch Controller started.")
   print("Move your index fingertip to move the Windows cursor.")
   print("High-speed cursor mode is enabled.")
   print("Index finger up enables control, thumb pinch clicks, and finger speed controls scrolling.")
